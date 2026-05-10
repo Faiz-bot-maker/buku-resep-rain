@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🍰 Buku Resep Kue</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fredoka+One&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <!-- jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <!-- SheetJS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+
+  <!-- Floating decorations -->
+  <div class="deco deco-1">🍩</div>
+  <div class="deco deco-2">⭐</div>
+  <div class="deco deco-3">🍪</div>
+  <div class="deco deco-4">✨</div>
+  <div class="deco deco-5">🎂</div>
+  <div class="deco deco-6">🌸</div>
+
+  <!-- Header -->
+  <header>
+    <div class="header-inner">
+      <div class="header-mascot">
+        <div class="mascot-circle">🍰</div>
+        <div class="mascot-stars">
+          <span>⭐</span><span>✨</span><span>⭐</span>
+        </div>
+      </div>
+      <div class="header-text">
+        <div class="header-greeting" id="headerGreeting">Selamat Pagi, Princess! 👑</div>
+        <h1>Buku Resep Kue</h1>
+        <p>✨ Simpan semua resep kue di sini! ✨</p>
+      </div>
+    </div>
+    <div class="header-wave">
+      <svg viewBox="0 0 1200 60" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M0,30 C150,60 350,0 600,30 C850,60 1050,0 1200,30 L1200,60 L0,60 Z" fill="#fff9f0"/>
+      </svg>
+    </div>
+  </header>
+
+  <main>
+    <!-- Stats Bar -->
+    <div class="stats-bar">
+      <div class="stat-chip chip-pink">
+        <span class="chip-icon">📚</span>
+        <span><b id="statTotal">0</b> Resep</span>
+      </div>
+      <div class="stat-chip chip-purple" id="statCatChip" style="display:none">
+        <span class="chip-icon">🏷️</span>
+        <span><b id="statCat">0</b> Kategori</span>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="Cari resep atau bahan..." />
+      </div>
+      <div class="export-group">
+        <button class="btn btn-export-pdf" id="btnExportPDF">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M14 2v6h6M9 13h6M9 17h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Export PDF
+        </button>
+        <button class="btn btn-export-excel" id="btnExportExcel">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M14 2v6h6M8 13l8 6M16 13l-8 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Export Excel
+        </button>
+      </div>
+    </div>
+
+    <!-- Recipe Grid -->
+    <div id="recipeGrid" class="recipe-grid"></div>
+
+    <!-- Empty State — di luar grid agar bisa center penuh -->
+    <div id="emptyState" class="empty-state hidden">
+      <div class="empty-illo">
+        <div class="empty-plate">🍽️</div>
+        <div class="empty-sparkles">✨🌟✨</div>
+      </div>
+      <h3 id="emptyTitle">Belum ada resep nih!</h3>
+      <p id="emptyDesc">Yuk tambahkan resep kue pertamamu 🎉</p>
+      <button class="btn btn-add" id="btnEmptyAdd">
+        <span class="btn-icon">＋</span> Tambah Sekarang
+      </button>
+    </div>
+  </main>
+
+  <!-- ===== Add/Edit Modal ===== -->
+  <div id="modalOverlay" class="modal-overlay hidden">
+    <div class="modal modal-form">
+      <div class="modal-header">
+        <div class="modal-header-left">
+          <div class="modal-emoji" id="modalIcon">✨</div>
+          <div>
+            <h2 id="modalTitle">Tambah Resep</h2>
+            <p class="modal-sub">Isi detail resep kue kamu dengan lengkap ya! 🍰</p>
+          </div>
+        </div>
+        <button class="btn-close" id="btnCloseModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="recipeForm" novalidate>
+          <input type="hidden" id="recipeId" />
+
+          <!-- Nama -->
+          <div class="form-group">
+            <label for="recipeName">🍽️ Nama Resep <span class="req">*</span></label>
+            <input type="text" id="recipeName" placeholder="cth. Brownies Coklat Fudgy" required />
+          </div>
+
+          <!-- Kategori & Deskripsi -->
+          <div class="form-row">
+            <div class="form-group">
+              <label for="recipeCategory">🏷️ Kategori</label>
+              <input type="text" id="recipeCategory" list="categoryOptions"
+                     placeholder="cth. Cake, Cookies…" autocomplete="off" />
+              <datalist id="categoryOptions">
+                <option value="Kue Kering">
+                <option value="Kue Basah">
+                <option value="Cake">
+                <option value="Cookies">
+                <option value="Roti">
+                <option value="Pudding">
+                <option value="Tart">
+                <option value="Donat">
+                <option value="Lainnya">
+              </datalist>
+            </div>
+            <div class="form-group">
+              <label for="recipeDesc">📝 Deskripsi Singkat</label>
+              <input type="text" id="recipeDesc" placeholder="cth. Lembut, coklat, fudgy" />
+            </div>
+          </div>
+
+          <!-- Bahan-bahan -->
+          <div class="form-group form-group-ing">
+            <div class="ing-header">
+              <label>🧂 Bahan-bahan <span class="req">*</span></label>
+              <button type="button" class="btn-add-ing" id="btnAddIngredient">＋ Tambah Bahan</button>
+            </div>
+            <div class="ing-table-wrap">
+              <div class="ing-table-head">
+                <span class="col-num">#</span>
+                <span class="col-name">Nama Bahan</span>
+                <span class="col-qty">Jumlah</span>
+                <span class="col-unit">Satuan</span>
+                <span class="col-del"></span>
+              </div>
+              <div id="ingredientList"></div>
+            </div>
+          </div>
+
+          <!-- Langkah -->
+          <div class="form-group">
+            <label for="recipeSteps">📋 Langkah Pembuatan</label>
+            <textarea id="recipeSteps" rows="5"
+              placeholder="1. Panaskan oven 180°C&#10;2. Campurkan bahan kering&#10;3. Aduk rata lalu tuang ke loyang..."></textarea>
+          </div>
+
+          <!-- Suhu & Berat -->
+          <div class="form-row">
+            <div class="form-group">
+              <label for="recipeTemp">🌡️ Suhu Oven (°C)</label>
+              <input type="number" id="recipeTemp" placeholder="cth. 180" min="0" max="300" />
+            </div>
+            <div class="form-group">
+              <label for="recipeWeight">⚖️ Berat / Hasil</label>
+              <input type="text" id="recipeWeight" placeholder="cth. 12 potong / 500 gram" />
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn btn-cancel" id="btnCancel">Batal</button>
+            <button type="submit" class="btn btn-save">💾 Simpan Resep</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Detail Modal ===== -->
+  <div id="detailOverlay" class="modal-overlay hidden">
+    <div class="modal modal-detail">
+      <div class="modal-header">
+        <div class="modal-header-left">
+          <div class="modal-emoji" id="detailIcon">🍰</div>
+          <div>
+            <h2 id="detailTitle"></h2>
+            <p class="modal-sub" id="detailCat"></p>
+          </div>
+        </div>
+        <button class="btn-close" id="btnCloseDetail">✕</button>
+      </div>
+      <div class="modal-body" id="detailBody"></div>
+    </div>
+  </div>
+
+  <!-- FAB Tambah Resep -->
+  <button class="fab" id="btnTambah" title="Tambah Resep">
+    <span class="fab-icon">＋</span>
+  </button>
+
+  <!-- Confirm Delete Modal -->
+  <div id="confirmOverlay" class="confirm-overlay hidden">
+    <div class="confirm-box">
+      <div class="confirm-icon">🗑️</div>
+      <h3>Hapus Resep?</h3>
+      <p id="confirmMsg">Resep ini akan dihapus permanen dan tidak bisa dikembalikan.</p>
+      <div class="confirm-actions">
+        <button class="btn btn-cancel" id="confirmCancel">Batal</button>
+        <button class="btn btn-confirm-del" id="confirmOk">Ya, Hapus!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay" class="loading-overlay hidden">
+    <div class="loading-cake">🍰</div>
+    <div class="loading-dots">
+      <span></span><span></span><span></span>
+    </div>
+    <p id="loadingMsg">Memuat data...</p>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
