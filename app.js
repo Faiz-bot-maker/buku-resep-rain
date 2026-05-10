@@ -398,22 +398,22 @@ function exportPDF() {
 
   const addFooter = () => {
     const pg = doc.internal.getCurrentPageInfo().pageNumber;
-    doc.setDrawColor(200, 160, 240);
+    doc.setDrawColor(191, 219, 254); // Blue light
     doc.setLineWidth(0.3);
     doc.line(ml, pageH - 12, pageW - mr, pageH - 12);
     doc.setFontSize(8);
-    doc.setTextColor(180, 140, 210);
+    doc.setTextColor(59, 130, 246); // Blue primary
     doc.setFont('helvetica', 'normal');
     doc.text('Buku Resep Kue', ml, pageH - 7);
     doc.text('Halaman ' + pg, pageW - mr, pageH - 7, { align: 'right' });
   };
 
   // ── Halaman 1: Cover ──
-  doc.setFillColor(120, 40, 200);
+  doc.setFillColor(30, 58, 138); // Blue dark
   doc.rect(0, 0, pageW, pageH, 'F');
-  doc.setFillColor(168, 85, 247);
+  doc.setFillColor(59, 130, 246); // Blue primary
   doc.roundedRect(10, 10, pageW - 20, pageH - 20, 8, 8, 'F');
-  doc.setFillColor(255, 110, 180);
+  doc.setFillColor(255, 126, 185); // Pink primary
   doc.roundedRect(20, 20, pageW - 40, pageH - 40, 6, 6, 'F');
 
   doc.setTextColor(255, 255, 255);
@@ -427,14 +427,14 @@ function exportPDF() {
 
   doc.setFillColor(255, 255, 255);
   doc.roundedRect(pageW / 2 - 45, 118, 90, 14, 7, 7, 'F');
-  doc.setTextColor(168, 85, 247);
+  doc.setTextColor(59, 130, 246); // Blue
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.text(recipes.length + ' Resep  |  ' + now, pageW / 2, 127, { align: 'center' });
 
   // ── Halaman 2: Daftar Isi ──
   doc.addPage();
-  doc.setFillColor(168, 85, 247);
+  doc.setFillColor(59, 130, 246); // Blue
   doc.rect(0, 0, pageW, 22, 'F');
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
@@ -455,9 +455,9 @@ function exportPDF() {
     head: [['No', 'Nama Resep', 'Kategori', 'Bahan', 'Suhu', 'Hasil']],
     body: summaryRows,
     margin: { left: ml, right: mr },
-    headStyles: { fillColor: [168,85,247], textColor: 255, fontStyle: 'bold', fontSize: 9, halign: 'center' },
-    bodyStyles: { fontSize: 9, textColor: [60,30,90] },
-    alternateRowStyles: { fillColor: [248,240,255] },
+    headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold', fontSize: 9, halign: 'center' },
+    bodyStyles: { fontSize: 9, textColor: [30, 58, 138] },
+    alternateRowStyles: { fillColor: [239, 246, 255] },
     columnStyles: {
       0: { halign: 'center', cellWidth: 10 },
       2: { halign: 'center', cellWidth: 28 },
@@ -474,7 +474,7 @@ function exportPDF() {
     const ings = recipe.ingredients || [];
 
     // Header
-    doc.setFillColor(168, 85, 247);
+    doc.setFillColor(59, 130, 246); // Blue
     doc.rect(0, 0, pageW, 24, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
@@ -489,10 +489,10 @@ function exportPDF() {
     let bx = ml;
     const by = 34;
     const badgeDefs = [
-      { label: 'KATEGORI', val: recipe.category || 'Lainnya', c: [168,85,247] },
-      { label: 'SUHU',     val: recipe.temp ? recipe.temp + 'C' : '-', c: [251,191,36] },
-      { label: 'HASIL',    val: recipe.weight || '-',  c: [52,211,153] },
-      { label: 'BAHAN',    val: ings.length + ' item', c: [96,165,250] },
+      { label: 'KATEGORI', val: recipe.category || 'Lainnya', c: [59, 130, 246] }, // Blue
+      { label: 'SUHU',     val: recipe.temp ? recipe.temp + 'C' : '-', c: [251, 191, 36] }, // Yellow/Orange
+      { label: 'HASIL',    val: recipe.weight || '-',  c: [52, 211, 153] }, // Green
+      { label: 'BAHAN',    val: ings.length + ' item', c: [255, 126, 185] }, // Pink
     ];
     badgeDefs.forEach(b => {
       const bw = 40;
@@ -511,10 +511,10 @@ function exportPDF() {
 
     // Deskripsi
     if (recipe.desc) {
-      doc.setFillColor(248, 240, 255);
+      doc.setFillColor(239, 246, 255); // Light Blue
       const dLines = doc.splitTextToSize(recipe.desc, pageW - ml - mr - 6);
       doc.roundedRect(ml, cy - 3, pageW - ml - mr, dLines.length * 5 + 6, 2, 2, 'F');
-      doc.setTextColor(100, 50, 150);
+      doc.setTextColor(30, 58, 138); // Dark Blue
       doc.setFontSize(9);
       doc.setFont('helvetica', 'italic');
       doc.text(dLines, ml + 3, cy + 2);
@@ -533,9 +533,9 @@ function exportPDF() {
         head: [['No', 'Nama Bahan', 'Jumlah', 'Satuan']],
         body: ings.map((ing, i) => [String(i+1), ing.name||'-', ing.qty||'-', ing.unit||'-']),
         margin: { left: ml, right: mr },
-        headStyles: { fillColor: [255,110,180], textColor: 255, fontStyle: 'bold', fontSize: 9 },
-        bodyStyles: { fontSize: 9, textColor: [60,30,90] },
-        alternateRowStyles: { fillColor: [255,240,250] },
+        headStyles: { fillColor: [52, 211, 153], textColor: 255, fontStyle: 'bold', fontSize: 9 }, // Green
+        bodyStyles: { fontSize: 9, textColor: [30, 58, 138] },
+        alternateRowStyles: { fillColor: [236, 253, 245] }, // Light Green
         columnStyles: {
           0: { halign: 'center', cellWidth: 10 },
           2: { halign: 'center', cellWidth: 24 },
@@ -556,9 +556,9 @@ function exportPDF() {
       cy += 4;
       const sLines = doc.splitTextToSize(recipe.steps, pageW - ml - mr - 8);
       const boxH = sLines.length * 5.2 + 8;
-      doc.setFillColor(248, 240, 255);
+      doc.setFillColor(239, 246, 255); // Light Blue
       doc.roundedRect(ml, cy, pageW - ml - mr, boxH, 3, 3, 'F');
-      doc.setTextColor(80, 40, 120);
+      doc.setTextColor(30, 58, 138); // Dark Blue
       doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
       doc.text(sLines, ml + 4, cy + 6);
@@ -596,22 +596,18 @@ function exportExcel() {
 
   // Warna tema
   const C = {
-    purple:    { rgb: '7C3AED' },
-    purpleLt:  { rgb: 'A855F7' },
-    purpleBg:  { rgb: 'F5F3FF' },
-    purpleHdr: { rgb: 'EDE9FE' },
-    pink:      { rgb: 'DB2777' },
-    pinkLt:    { rgb: 'F472B6' },
-    pinkBg:    { rgb: 'FFF0F7' },
-    blue:      { rgb: '2563EB' },
+    blue:      { rgb: '3B82F6' },
     blueLt:    { rgb: '60A5FA' },
     blueBg:    { rgb: 'EFF6FF' },
+    pink:      { rgb: 'FF7EB9' },
+    pinkLt:    { rgb: 'F472B6' },
+    pinkBg:    { rgb: 'FFF0F7' },
+    green:     { rgb: '34D399' },
+    greenLt:   { rgb: 'A7F3D0' },
+    greenBg:   { rgb: 'ECFDF5' },
     white:     { rgb: 'FFFFFF' },
-    rowAlt:    { rgb: 'FAF5FF' },
-    rowAlt2:   { rgb: 'FFF0F7' },
-    rowAlt3:   { rgb: 'EFF6FF' },
-    border:    { rgb: 'DDD6FE' },
-    textDark:  { rgb: '3D1F5E' },
+    border:    { rgb: 'BFDBFE' },
+    textDark:  { rgb: '1E3A8A' },
   };
 
   const thinBorder = (color) => ({
@@ -652,14 +648,14 @@ function exportExcel() {
   ];
 
   // Judul
-  sc(ws1,'A1',{ font:{ bold:true, sz:16, color:C.white }, fill:{ fgColor:C.purple, patternType:'solid' }, alignment:{ horizontal:'center', vertical:'center' } });
-  sc(ws1,'A2',{ font:{ sz:10, color:C.purple }, fill:{ fgColor:C.purpleHdr, patternType:'solid' }, alignment:{ horizontal:'center', vertical:'center' } });
+  sc(ws1,'A1',{ font:{ bold:true, sz:16, color:C.white }, fill:{ fgColor:C.blue, patternType:'solid' }, alignment:{ horizontal:'center', vertical:'center' } });
+  sc(ws1,'A2',{ font:{ sz:10, color:C.blue }, fill:{ fgColor:C.blueBg, patternType:'solid' }, alignment:{ horizontal:'center', vertical:'center' } });
 
   // Header kolom
   ['A','B','C','D','E','F','G'].forEach(col => {
     sc(ws1, col+'4', {
       font:      { bold:true, sz:10, color:C.white },
-      fill:      { fgColor:C.purpleLt, patternType:'solid' },
+      fill:      { fgColor:C.blueLt, patternType:'solid' },
       alignment: { horizontal:'center', vertical:'center' },
       border:    thinBorder(C.border),
     });
@@ -668,7 +664,7 @@ function exportExcel() {
   // Data rows
   recipes.forEach((_, i) => {
     const row = i + 5;
-    const bg  = { rgb: i % 2 === 0 ? 'FAF5FF' : 'FFFFFF' };
+    const bg  = { rgb: i % 2 === 0 ? 'EFF6FF' : 'FFFFFF' };
     const bdr = thinBorder(C.border);
     sc(ws1,`A${row}`,{ font:{ sz:10, color:C.textDark }, fill:{ fgColor:bg, patternType:'solid' }, alignment:{ horizontal:'center', vertical:'top' }, border:bdr });
     sc(ws1,`B${row}`,{ font:{ bold:true, sz:10, color:C.textDark }, fill:{ fgColor:bg, patternType:'solid' }, alignment:{ vertical:'top' }, border:bdr });
@@ -779,22 +775,22 @@ function exportExcel() {
     { s:{ r:1,c:0 }, e:{ r:1,c:5 } },
   ];
 
-  sc(ws3,'A1',{ font:{ bold:true, sz:14, color:C.white }, fill:{ fgColor:C.blue, patternType:'solid' }, alignment:{ horizontal:'center', vertical:'center' } });
-  sc(ws3,'A2',{ font:{ sz:10, color:C.blue }, fill:{ fgColor:{ rgb:'DBEAFE' }, patternType:'solid' }, alignment:{ horizontal:'center', vertical:'center' } });
+  sc(ws3,'A1',{ font:{ bold:true, sz:14, color:C.white }, fill:{ fgColor:C.green, patternType:'solid' }, alignment:{ horizontal:'center', vertical:'center' } });
+  sc(ws3,'A2',{ font:{ sz:10, color:C.green }, fill:{ fgColor:C.greenBg, patternType:'solid' }, alignment:{ horizontal:'center', vertical:'center' } });
 
   ['A','B','C','D','E','F'].forEach(col => {
     sc(ws3, col+'4', {
       font:      { bold:true, sz:10, color:C.white },
-      fill:      { fgColor:C.blueLt, patternType:'solid' },
+      fill:      { fgColor:C.greenLt, patternType:'solid' },
       alignment: { horizontal:'center', vertical:'center' },
-      border:    thinBorder({ rgb:'BFDBFE' }),
+      border:    thinBorder(C.greenLt),
     });
   });
 
   recipes.forEach((_, i) => {
     const row = i + 5;
-    const bg  = { rgb: i % 2 === 0 ? 'EFF6FF' : 'FFFFFF' };
-    const bdr = thinBorder({ rgb:'BFDBFE' });
+    const bg  = { rgb: i % 2 === 0 ? 'ECFDF5' : 'FFFFFF' };
+    const bdr = thinBorder(C.greenLt);
     sc(ws3,`A${row}`,{ font:{ sz:10, color:C.textDark }, fill:{ fgColor:bg, patternType:'solid' }, alignment:{ horizontal:'center', vertical:'top' }, border:bdr });
     sc(ws3,`B${row}`,{ font:{ bold:true, sz:10, color:C.textDark }, fill:{ fgColor:bg, patternType:'solid' }, alignment:{ vertical:'top' }, border:bdr });
     sc(ws3,`C${row}`,{ font:{ sz:10, color:C.textDark }, fill:{ fgColor:bg, patternType:'solid' }, alignment:{ horizontal:'center', vertical:'top' }, border:bdr });
