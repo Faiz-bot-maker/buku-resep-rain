@@ -86,6 +86,7 @@ const ingredientList    = document.getElementById('ingredientList');
 const recipeStepsInput  = document.getElementById('recipeSteps');
 const recipeTempInput   = document.getElementById('recipeTemp');
 const recipeWeightInput = document.getElementById('recipeWeight');
+const recipeTimeInput   = document.getElementById('recipeTime');
 
 const detailOverlay     = document.getElementById('detailOverlay');
 const detailTitle       = document.getElementById('detailTitle');
@@ -160,6 +161,7 @@ function renderGrid(filter = '') {
       <div class="card-meta">
         ${recipe.temp   ? `<span class="card-meta-chip">🌡 ${escHtml(recipe.temp)}°C</span>` : ''}
         ${recipe.weight ? `<span class="card-meta-chip">⚖️ ${escHtml(recipe.weight)}</span>` : ''}
+        ${recipe.time   ? `<span class="card-meta-chip">⏱ ${escHtml(recipe.time)} menit</span>` : ''}
       </div>
       <div class="card-actions">
         <button class="card-btn card-btn-detail" data-action="detail">👁 Detail</button>
@@ -176,17 +178,39 @@ function renderGrid(filter = '') {
 }
 
 // ===== Ingredient Rows =====
+const UNIT_OPTIONS = [
+  'gram', 'kg', 'ml', 'liter', 'sdm', 'sdt', 'cangkir',
+  'butir', 'buah', 'lembar', 'batang', 'siung', 'iris',
+  'sachet', 'bungkus', 'kaleng', 'secukupnya',
+];
+
 function addIngredientRow(name = '', qty = '', unit = '') {
   const idx = ingredientList.children.length + 1;
   const row = document.createElement('div');
   row.className = 'ingredient-row';
+
+  const unitOpts = UNIT_OPTIONS.map(u =>
+    `<option value="${u}"${u === unit ? ' selected' : ''}>${u}</option>`
+  ).join('');
+
   row.innerHTML = `
     <div class="ing-num">${idx}</div>
-    <input type="text" class="ing-name" placeholder="cth. Tepung terigu" value="${escAttr(name)}" />
-    <input type="text" class="qty"      placeholder="200"   value="${escAttr(qty)}" />
-    <input type="text" class="unit"     placeholder="gram"  value="${escAttr(unit)}" />
+    <input type="text"   class="ing-name" placeholder="cth. Tepung terigu" value="${escAttr(name)}" />
+    <input type="number" class="qty"      placeholder="200" min="0" value="${escAttr(qty)}" />
+    <select class="unit">
+      <option value="" ${!unit ? 'selected' : ''}>— pilih —</option>
+      ${unitOpts}
+    </select>
     <button type="button" class="btn-remove-ing" title="Hapus bahan">✕</button>
   `;
+  // jika unit tidak ada di list, set manual
+  if (unit && !UNIT_OPTIONS.includes(unit)) {
+    row.querySelector('.unit').value = '';
+    // tambahkan sebagai option custom
+    const opt = document.createElement('option');
+    opt.value = unit; opt.textContent = unit; opt.selected = true;
+    row.querySelector('.unit').appendChild(opt);
+  }
   row.querySelector('.btn-remove-ing').addEventListener('click', () => {
     row.remove(); renumberRows();
   });
@@ -208,7 +232,6 @@ function getIngredients() {
     }))
     .filter(i => i.name);
 }
-
 // ===== Modal: Add =====
 function openAddModal() {
   modalTitle.textContent   = 'Tambah Resep';
@@ -220,7 +243,6 @@ function openAddModal() {
   showModal(modalOverlay);
   setTimeout(() => recipeNameInput.focus(), 100);
 }
-
 // ===== Modal: Edit =====
 function openEditModal(id) {
   const recipe = recipes.find(r => r.id === id);
@@ -234,6 +256,7 @@ function openEditModal(id) {
   recipeStepsInput.value    = recipe.steps || '';
   recipeTempInput.value     = recipe.temp || '';
   recipeWeightInput.value   = recipe.weight || '';
+  recipeTimeInput.value     = recipe.time || '';
   ingredientList.innerHTML  = '';
   const ings = recipe.ingredients || [];
   (ings.length ? ings : [{}]).forEach(i => addIngredientRow(i.name, i.qty, i.unit));
@@ -268,6 +291,7 @@ function openDetail(id) {
       <span class="detail-badge neutral">🧂 ${ings.length} bahan</span>
       ${recipe.temp   ? `<span class="detail-badge neutral">🌡 ${escHtml(recipe.temp)}°C</span>` : ''}
       ${recipe.weight ? `<span class="detail-badge neutral">⚖️ ${escHtml(recipe.weight)}</span>` : ''}
+      ${recipe.time   ? `<span class="detail-badge neutral">⏱ ${escHtml(recipe.time)} menit</span>` : ''}
     </div>
     ${recipe.desc ? `<p style="font-size:.9rem;color:var(--text-2);margin-bottom:1.1rem;line-height:1.6;">${escHtml(recipe.desc)}</p>` : ''}
     ${ings.length > 0 ? `
@@ -318,6 +342,7 @@ recipeForm.addEventListener('submit', async e => {
     steps:       recipeStepsInput.value.trim(),
     temp:        recipeTempInput.value.trim(),
     weight:      recipeWeightInput.value.trim(),
+    time:        recipeTimeInput.value.trim(),
     createdAt:   existing?.createdAt || now,
     updatedAt:   now,
   };
@@ -379,64 +404,100 @@ function escHtml(s) {
 }
 function escAttr(s) { return escHtml(s); }
 
+// ===== Helper: Download file (works on mobile too) =====
+function triggerDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a   = document.createElement('a');
+  a.href     = url;
+  a.download = filename;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 2000);
+}
+
 // ===== Export PDF =====
 function exportPDF() {
   if (!recipes.length) { showToast('⚠️ Belum ada resep untuk diekspor!'); return; }
 
-  // Pastikan library sudah load
   if (!window.jspdf || !window.jspdf.jsPDF) {
     showToast('❌ Library PDF belum siap, coba lagi sebentar.');
     return;
   }
 
   const { jsPDF } = window.jspdf;
-  const doc  = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const doc   = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
   const ml = 14, mr = 14;
-  const now = new Date().toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' });
+  const now = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
+
+  // Warna tema: PINK konsisten di semua halaman
+  const PINK       = [255, 110, 180];   // header utama
+  const PINK_DARK  = [219, 39, 119];    // aksen gelap
+  const PINK_LIGHT = [255, 240, 250];   // background box
+  const PINK_MID   = [255, 182, 218];   // garis / border
+  const YELLOW     = [251, 191, 36];
+  const GREEN      = [52, 211, 153];
+  const PURPLE     = [168, 85, 247];
+  const WHITE      = [255, 255, 255];
+  const TEXT_DARK  = [61, 31, 94];
 
   const addFooter = () => {
     const pg = doc.internal.getCurrentPageInfo().pageNumber;
-    doc.setDrawColor(191, 219, 254); // Blue light
+    doc.setDrawColor(...PINK_MID);
     doc.setLineWidth(0.3);
     doc.line(ml, pageH - 12, pageW - mr, pageH - 12);
     doc.setFontSize(8);
-    doc.setTextColor(59, 130, 246); // Blue primary
+    doc.setTextColor(...PINK_DARK);
     doc.setFont('helvetica', 'normal');
     doc.text('Buku Resep Kue', ml, pageH - 7);
     doc.text('Halaman ' + pg, pageW - mr, pageH - 7, { align: 'right' });
   };
 
   // ── Halaman 1: Cover ──
-  doc.setFillColor(30, 58, 138); // Blue dark
+  doc.setFillColor(...PINK_DARK);
   doc.rect(0, 0, pageW, pageH, 'F');
-  doc.setFillColor(59, 130, 246); // Blue primary
+  doc.setFillColor(...PINK);
   doc.roundedRect(10, 10, pageW - 20, pageH - 20, 8, 8, 'F');
-  doc.setFillColor(255, 126, 185); // Pink primary
+  doc.setFillColor(255, 230, 245);
   doc.roundedRect(20, 20, pageW - 40, pageH - 40, 6, 6, 'F');
 
-  doc.setTextColor(255, 255, 255);
+  doc.setTextColor(...WHITE);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(32);
+  // Shadow effect
+  doc.setTextColor(...PINK_DARK);
+  doc.text('BUKU RESEP KUE', pageW / 2 + 0.5, 90.5, { align: 'center' });
+  doc.setTextColor(...WHITE);
   doc.text('BUKU RESEP KUE', pageW / 2, 90, { align: 'center' });
 
   doc.setFontSize(14);
   doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...PINK_DARK);
   doc.text('Koleksi Resep Kue Pilihan', pageW / 2, 105, { align: 'center' });
 
-  doc.setFillColor(255, 255, 255);
+  doc.setFillColor(...WHITE);
   doc.roundedRect(pageW / 2 - 45, 118, 90, 14, 7, 7, 'F');
-  doc.setTextColor(59, 130, 246); // Blue
+  doc.setTextColor(...PINK_DARK);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.text(recipes.length + ' Resep  |  ' + now, pageW / 2, 127, { align: 'center' });
 
+  // Dekorasi bintang
+  doc.setFontSize(20);
+  doc.setTextColor(...WHITE);
+  doc.text('✦', 30, 70);
+  doc.text('✦', pageW - 30, 70);
+  doc.setFontSize(14);
+  doc.text('✦', 25, 150);
+  doc.text('✦', pageW - 25, 150);
+
   // ── Halaman 2: Daftar Isi ──
   doc.addPage();
-  doc.setFillColor(59, 130, 246); // Blue
+  doc.setFillColor(...PINK);
   doc.rect(0, 0, pageW, 22, 'F');
-  doc.setTextColor(255, 255, 255);
+  doc.setTextColor(...WHITE);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(14);
   doc.text('DAFTAR RESEP', pageW / 2, 14, { align: 'center' });
@@ -446,24 +507,26 @@ function exportPDF() {
     r.name || '-',
     r.category || 'Lainnya',
     String((r.ingredients || []).length) + ' bahan',
-    r.temp ? r.temp + 'C' : '-',
+    r.temp ? r.temp + '°C' : '-',
+    r.time ? r.time + ' mnt' : '-',
     r.weight || '-',
   ]);
 
   doc.autoTable({
     startY: 28,
-    head: [['No', 'Nama Resep', 'Kategori', 'Bahan', 'Suhu', 'Hasil']],
+    head: [['No', 'Nama Resep', 'Kategori', 'Bahan', 'Suhu', 'Waktu', 'Hasil']],
     body: summaryRows,
     margin: { left: ml, right: mr },
-    headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold', fontSize: 9, halign: 'center' },
-    bodyStyles: { fontSize: 9, textColor: [30, 58, 138] },
-    alternateRowStyles: { fillColor: [239, 246, 255] },
+    headStyles: { fillColor: PINK, textColor: 255, fontStyle: 'bold', fontSize: 9, halign: 'center' },
+    bodyStyles: { fontSize: 9, textColor: TEXT_DARK },
+    alternateRowStyles: { fillColor: [255, 240, 250] },
     columnStyles: {
       0: { halign: 'center', cellWidth: 10 },
-      2: { halign: 'center', cellWidth: 28 },
-      3: { halign: 'center', cellWidth: 22 },
-      4: { halign: 'center', cellWidth: 18 },
-      5: { halign: 'center', cellWidth: 26 },
+      2: { halign: 'center', cellWidth: 24 },
+      3: { halign: 'center', cellWidth: 18 },
+      4: { halign: 'center', cellWidth: 16 },
+      5: { halign: 'center', cellWidth: 18 },
+      6: { halign: 'center', cellWidth: 22 },
     },
     didDrawPage: addFooter,
   });
@@ -473,10 +536,10 @@ function exportPDF() {
     doc.addPage();
     const ings = recipe.ingredients || [];
 
-    // Header
-    doc.setFillColor(59, 130, 246); // Blue
+    // Header pink
+    doc.setFillColor(...PINK);
     doc.rect(0, 0, pageW, 24, 'F');
-    doc.setTextColor(255, 255, 255);
+    doc.setTextColor(...WHITE);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(15);
     const titleLines = doc.splitTextToSize(recipe.name || '-', pageW - ml - mr - 20);
@@ -489,16 +552,16 @@ function exportPDF() {
     let bx = ml;
     const by = 34;
     const badgeDefs = [
-      { label: 'KATEGORI', val: recipe.category || 'Lainnya', c: [59, 130, 246] }, // Blue
-      { label: 'SUHU',     val: recipe.temp ? recipe.temp + 'C' : '-', c: [251, 191, 36] }, // Yellow/Orange
-      { label: 'HASIL',    val: recipe.weight || '-',  c: [52, 211, 153] }, // Green
-      { label: 'BAHAN',    val: ings.length + ' item', c: [255, 126, 185] }, // Pink
+      { label: 'KATEGORI', val: recipe.category || 'Lainnya', c: PINK },
+      { label: 'SUHU',     val: recipe.temp ? recipe.temp + '°C' : '-', c: YELLOW },
+      { label: 'HASIL',    val: recipe.weight || '-',  c: GREEN },
+      { label: 'MENIT',    val: recipe.time ? recipe.time + ' mnt' : '-', c: PURPLE },
     ];
     badgeDefs.forEach(b => {
       const bw = 40;
       doc.setFillColor(...b.c);
       doc.roundedRect(bx, by - 6, bw, 13, 2, 2, 'F');
-      doc.setTextColor(255, 255, 255);
+      doc.setTextColor(...WHITE);
       doc.setFontSize(6.5);
       doc.setFont('helvetica', 'bold');
       doc.text(b.label, bx + bw / 2, by - 1, { align: 'center' });
@@ -511,10 +574,10 @@ function exportPDF() {
 
     // Deskripsi
     if (recipe.desc) {
-      doc.setFillColor(239, 246, 255); // Light Blue
+      doc.setFillColor(...PINK_LIGHT);
       const dLines = doc.splitTextToSize(recipe.desc, pageW - ml - mr - 6);
       doc.roundedRect(ml, cy - 3, pageW - ml - mr, dLines.length * 5 + 6, 2, 2, 'F');
-      doc.setTextColor(30, 58, 138); // Dark Blue
+      doc.setTextColor(...PINK_DARK);
       doc.setFontSize(9);
       doc.setFont('helvetica', 'italic');
       doc.text(dLines, ml + 3, cy + 2);
@@ -523,7 +586,7 @@ function exportPDF() {
 
     // Tabel bahan
     if (ings.length > 0) {
-      doc.setTextColor(60, 30, 90);
+      doc.setTextColor(...TEXT_DARK);
       doc.setFontSize(11);
       doc.setFont('helvetica', 'bold');
       doc.text('Bahan-bahan', ml, cy);
@@ -531,11 +594,11 @@ function exportPDF() {
       doc.autoTable({
         startY: cy + 2,
         head: [['No', 'Nama Bahan', 'Jumlah', 'Satuan']],
-        body: ings.map((ing, i) => [String(i+1), ing.name||'-', ing.qty||'-', ing.unit||'-']),
+        body: ings.map((ing, i) => [String(i + 1), ing.name || '-', ing.qty || '-', ing.unit || '-']),
         margin: { left: ml, right: mr },
-        headStyles: { fillColor: [52, 211, 153], textColor: 255, fontStyle: 'bold', fontSize: 9 }, // Green
-        bodyStyles: { fontSize: 9, textColor: [30, 58, 138] },
-        alternateRowStyles: { fillColor: [236, 253, 245] }, // Light Green
+        headStyles: { fillColor: PINK, textColor: 255, fontStyle: 'bold', fontSize: 9 },
+        bodyStyles: { fontSize: 9, textColor: TEXT_DARK },
+        alternateRowStyles: { fillColor: PINK_LIGHT },
         columnStyles: {
           0: { halign: 'center', cellWidth: 10 },
           2: { halign: 'center', cellWidth: 24 },
@@ -549,16 +612,16 @@ function exportPDF() {
     // Langkah
     if (recipe.steps) {
       if (cy > pageH - 55) { doc.addPage(); cy = 20; }
-      doc.setTextColor(60, 30, 90);
+      doc.setTextColor(...TEXT_DARK);
       doc.setFontSize(11);
       doc.setFont('helvetica', 'bold');
       doc.text('Langkah Pembuatan', ml, cy);
       cy += 4;
       const sLines = doc.splitTextToSize(recipe.steps, pageW - ml - mr - 8);
       const boxH = sLines.length * 5.2 + 8;
-      doc.setFillColor(239, 246, 255); // Light Blue
+      doc.setFillColor(...PINK_LIGHT);
       doc.roundedRect(ml, cy, pageW - ml - mr, boxH, 3, 3, 'F');
-      doc.setTextColor(30, 58, 138); // Dark Blue
+      doc.setTextColor(...PINK_DARK);
       doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
       doc.text(sLines, ml + 4, cy + 6);
@@ -568,7 +631,11 @@ function exportPDF() {
   });
 
   const safeName = now.replace(/ /g, '_');
-  doc.save('Buku_Resep_Kue_' + safeName + '.pdf');
+  const fileName = 'Buku_Resep_Kue_' + safeName + '.pdf';
+
+  // Gunakan blob agar bisa download di HP
+  const pdfBlob = doc.output('blob');
+  triggerDownload(pdfBlob, fileName);
   showToast('✅ PDF berhasil diunduh!');
 }
 
@@ -802,7 +869,9 @@ function exportExcel() {
   XLSX.utils.book_append_sheet(wb, ws3, 'Langkah Pembuatan');
 
   const fileName = 'Buku_Resep_Kue_' + now.replace(/ /g, '_') + '.xlsx';
-  XLSX.writeFile(wb, fileName);
+  const wbOut  = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  const blob   = new Blob([wbOut], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  triggerDownload(blob, fileName);
   showToast('✅ Excel berhasil diunduh!');
 }
 
@@ -813,26 +882,25 @@ function showConfirm(recipeName) {
     _confirmResolve = resolve;
     document.getElementById('confirmMsg').textContent =
       `"${recipeName}" akan dihapus permanen dan tidak bisa dikembalikan.`;
-    document.getElementById('confirmOverlay').classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
+    const overlay = document.getElementById('confirmOverlay');
+    overlay.classList.remove('hidden');
+    // Jangan set overflow hidden di sini agar tidak block touch di HP
   });
 }
-document.getElementById('confirmOk').addEventListener('click', () => {
-  document.getElementById('confirmOverlay').classList.add('hidden');
+
+function _resolveConfirm(val) {
+  const overlay = document.getElementById('confirmOverlay');
+  overlay.classList.add('hidden');
   document.body.style.overflow = '';
-  if (_confirmResolve) { _confirmResolve(true); _confirmResolve = null; }
-});
-document.getElementById('confirmCancel').addEventListener('click', () => {
-  document.getElementById('confirmOverlay').classList.add('hidden');
-  document.body.style.overflow = '';
-  if (_confirmResolve) { _confirmResolve(false); _confirmResolve = null; }
-});
+  if (_confirmResolve) { _confirmResolve(val); _confirmResolve = null; }
+}
+
+document.getElementById('confirmOk').addEventListener('click',     () => _resolveConfirm(true));
+document.getElementById('confirmOk').addEventListener('touchend',  (e) => { e.preventDefault(); _resolveConfirm(true); });
+document.getElementById('confirmCancel').addEventListener('click',    () => _resolveConfirm(false));
+document.getElementById('confirmCancel').addEventListener('touchend', (e) => { e.preventDefault(); _resolveConfirm(false); });
 document.getElementById('confirmOverlay').addEventListener('click', e => {
-  if (e.target === document.getElementById('confirmOverlay')) {
-    document.getElementById('confirmOverlay').classList.add('hidden');
-    document.body.style.overflow = '';
-    if (_confirmResolve) { _confirmResolve(false); _confirmResolve = null; }
-  }
+  if (e.target === document.getElementById('confirmOverlay')) _resolveConfirm(false);
 });
 document.getElementById('btnTambah').addEventListener('click', openAddModal);
 document.getElementById('btnEmptyAdd').addEventListener('click', openAddModal);

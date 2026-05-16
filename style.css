@@ -627,6 +627,7 @@ main {
 
 /* ===== Form ===== */
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: .85rem; }
+.form-time { display: grid; grid-template-columns: 1fr 1fr; gap: .85rem; }
 .form-group { margin-bottom: 1rem; }
 .form-group label {
   display: flex;
@@ -673,6 +674,12 @@ main {
 }
 .ing-header label { margin-bottom: 0; }
 
+.ing-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: .5rem;
+}
+
 .ing-table-wrap {
   background: #fdf8ff;
   border: 2px solid var(--border);
@@ -710,7 +717,7 @@ main {
 
 .ing-num {
   width: 24px; height: 24px;
-  background: linear-gradient(135deg, var(--pink), var(--purple));
+  background: #ffb3b3;
   color: #fff;
   border-radius: 50%;
   font-size: .7rem;
@@ -727,6 +734,31 @@ main {
   background: #fff;
 }
 .ingredient-row input:focus { border-color: var(--purple); }
+
+.ingredient-row select.unit {
+  padding: .5rem .4rem;
+  font-size: .82rem;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 600;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-xs);
+  margin: 0 .25rem;
+  background: #fff;
+  color: var(--text);
+  outline: none;
+  cursor: pointer;
+  transition: border-color .2s;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23a855f7' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
+  padding-right: 22px;
+}
+.ingredient-row select.unit:focus { border-color: var(--purple); }
+
+/* 3-column form row */
+.form-row-3 { grid-template-columns: 1fr 1fr 1fr; }
 
 .btn-remove-ing {
   width: 28px; height: 28px;
@@ -1042,6 +1074,8 @@ main {
   .toolbar-right  { flex-direction: column; align-items: stretch; }
   .export-group   { display: grid; grid-template-columns: 1fr 1fr; }
   .form-row       { grid-template-columns: 1fr; }
+  .form-row-3     { grid-template-columns: 1fr; }
+  .form-time      { grid-template-columns: 1fr; }
   .modal          { max-height: 96vh; border-radius: var(--radius) var(--radius) 0 0; }
   .modal-overlay  { align-items: flex-end; padding: 0; }
   .ing-table-head,
